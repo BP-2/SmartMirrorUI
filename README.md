@@ -1,6 +1,6 @@
 # Welcome  👋
 
-This Repo contains code for my smart mirror display.  
+This Repo contains code for my smart mirror display weekend project.  
 
 The UI includes...
 
