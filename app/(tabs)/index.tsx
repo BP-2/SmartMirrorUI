@@ -2,6 +2,7 @@ import { Image, StyleSheet, Platform, View, Text, ScrollView, Dimensions } from 
 import React, { useEffect, useState } from 'react';
 import * as Location from 'expo-location';
 import { LineChart } from 'react-native-chart-kit';
+import * as Localize from "react-native-localize";
 
 import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
@@ -51,6 +52,7 @@ interface ForecastPeriod {
 export default function HomeScreen() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [weather, setWeather] = useState('Fetching weather...');
+  const [holiday, setHoliday] = useState('');
   const [temperatureData, setTemperatureData] = useState<number[]>([65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76]);
   const [precipitationData, setPrecipitationData] = useState<number[]>([0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 0]); 
   const [timeLabels, setTimeLabels] = useState<string[]>(['12:00', '1:00', '2:00', '3:00', '4:00', '5:00', '6:00', '7:00', '8:00', '9:00', '10:00', '11:00']); 
@@ -109,7 +111,29 @@ export default function HomeScreen() {
       }
     };
 
+    const fetchHoliday = async (): Promise<void> => {
+      try {
+        const getHolidayData = async (date: Date, countryCode: string): Promise<void> => {
+          const datesResponse = await fetch(`https://date.nager.at/api/v3/publicholidays/${date.getFullYear()}/${countryCode}`);
+          if (!datesResponse.ok) throw new Error('Error fetching public holidays');
+
+          const datesList = await datesResponse.json();
+          const formattedDate = date.toISOString().split("T")[0];
+          const todaysHoliday = datesList.find(h => h.date === formattedDate);
+          if (!todaysHoliday) { return; }
+
+          setHoliday(todaysHoliday.name);
+        };
+
+        await getHolidayData(currentTime, Localize.getCountry());
+      } catch (error) {
+        console.log('error:',error);
+        setHoliday('');
+      }
+    };
+
     fetchWeather();
+    fetchHoliday();
     return () => clearInterval(timer);
   }, []);
 
@@ -147,6 +171,11 @@ export default function HomeScreen() {
           The date is {formattedDate}.
         </ThemedText>
       </ThemedView>
+      {holiday !== '' && <ThemedView style={styles.stepContainer}>
+        <ThemedText type="subtitle" style={styles.whiteText}>
+          Happy {holiday}!
+        </ThemedText>
+      </ThemedView>}
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle" style={styles.whiteText}>
           The weather is {weather}.
